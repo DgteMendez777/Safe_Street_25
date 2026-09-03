@@ -1,0 +1,90 @@
+# Blender MTL File: 'SemaforoFree.blend'
+# Material Count: 8
+
+newmtl Amarelo
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.673848 0.363731 0.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl BlackMetal
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump D:\\BackUp\\NovaInstalação2024\\TRABALHOS\\Composição\\1-Compor\\Semaforo\\Textures\\1K-black_metal_1-normal.jpg
+map_Kd D:\\BackUp\\NovaInstalação2024\\TRABALHOS\\Composição\\1-Compor\\Semaforo\\Textures\\1K-black_metal_1-diffuse.jpg
+map_Ks D:\\BackUp\\NovaInstalação2024\\TRABALHOS\\Composição\\1-Compor\\Semaforo\\Textures\\1K-black_metal_1-specular.jpg
+refl D:\\BackUp\\NovaInstalação2024\\TRABALHOS\\Composição\\1-Compor\\Semaforo\\Textures\\1K-black_metal_1-ao.jpg
+
+newmtl Grafite
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.027321 0.027321 0.027321
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl PretoBrilho
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl PretoFosco
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.000000 0.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl Silver
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump D:\\BackUp\\NovaInstalação2024\\TRABALHOS\\Composição\\1-Compor\\Semaforo\\Textures\\4K-Silver_Normal.jpg
+map_Kd D:\\BackUp\\NovaInstalação2024\\TRABALHOS\\Composição\\1-Compor\\Semaforo\\Textures\\4K-Silver_Base Color.jpg
+map_Ns D:\\BackUp\\NovaInstalação2024\\TRABALHOS\\Composição\\1-Compor\\Semaforo\\Textures\\4K-Silver_Roughness.jpg
+refl D:\\BackUp\\NovaInstalação2024\\TRABALHOS\\Composição\\1-Compor\\Semaforo\\Textures\\4K-Silver_Metallic.jpg
+
+newmtl VerdeApagado
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.207916 0.015490
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl VernelhoAceso
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
