@@ -64,11 +64,11 @@ protected:
 
 	// Movement speed while walking (default)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
-	float WalkSpeed = 250.f;
+	float WalkSpeed = 114.f;
 
 	// Movement speed while holding the Sprint action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
-	float RunSpeed = 600.f;
+	float RunSpeed = 380.f;
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
