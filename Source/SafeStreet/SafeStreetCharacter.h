@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
+class UAnimMontage;
 
 UCLASS()
 class SAFESTREET_API ASafeStreetCharacter : public ACharacter
@@ -51,9 +52,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LookAction;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> JumpAction;
-
 	// Hold to run instead of walk
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SprintAction;
@@ -70,8 +68,24 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
 	float RunSpeed = 380.f;
 
+	// Montage played when a traffic vehicle hits the player; recovery happens automatically when it finishes
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Vehicle Collision", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> CrashMontage;
+
+	// Fired when a traffic vehicle hits the player, for extras beyond the animation (sound, camera shake, etc.)
+	UFUNCTION(BlueprintImplementableEvent, Category = "Vehicle Collision")
+	void OnHitByVehicle();
+
+	UFUNCTION()
+	void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	void OnCrashMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void StartSprint(const FInputActionValue& Value);
 	void StopSprint(const FInputActionValue& Value);
+
+	// True while the crash reaction plays; blocks movement input until RecoverFromCrash is called
+	bool bIsIncapacitated = false;
 };

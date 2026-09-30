@@ -23,6 +23,12 @@ ATrafficVehicle::ATrafficVehicle()
     VehicleMesh->SetMobility(
         EComponentMobility::Movable
     );
+
+    // The vehicle teleports each tick (no sweep), so overlap is what reliably detects
+    // the player regardless of the imported mesh's own collision setup.
+    VehicleMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    VehicleMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    VehicleMesh->SetGenerateOverlapEvents(true);
 }
 
 
@@ -392,7 +398,7 @@ float ATrafficVehicle::CalculateTrafficLightSpeed(
     /*
         Cinematica:
 
-        v² = 2ad
+        vï¿½ = 2ad
 
         v = sqrt(2ad)
     */
