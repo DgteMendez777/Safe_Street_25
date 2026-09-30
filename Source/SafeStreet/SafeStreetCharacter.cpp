@@ -3,6 +3,8 @@
 
 #include "SafeStreetCharacter.h"
 
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputComponent.h"
@@ -13,6 +15,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+#include "TrafficVehicle.h"
 
 // Sets default values
 ASafeStreetCharacter::ASafeStreetCharacter()
@@ -43,6 +46,8 @@ ASafeStreetCharacter::ASafeStreetCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ASafeStreetCharacter::OnCapsuleBeginOverlap);
 }
 
 // Called when the game starts or when spawned
@@ -80,9 +85,6 @@ void ASafeStreetCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASafeStreetCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASafeStreetCharacter::Look);
 
@@ -92,8 +94,50 @@ void ASafeStreetCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	}
 }
 
+void ASafeStreetCharacter::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (bIsIncapacitated)
+	{
+		return;
+	}
+
+	if (!OtherActor->IsA<ATrafficVehicle>())
+	{
+		return;
+	}
+
+	bIsIncapacitated = true;
+	OnHitByVehicle();
+
+	if (CrashMontage)
+	{
+		if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+		{
+			PlayAnimMontage(CrashMontage);
+
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &ASafeStreetCharacter::OnCrashMontageEnded);
+			AnimInstance->Montage_SetEndDelegate(EndDelegate, CrashMontage);
+			return;
+		}
+	}
+
+	// No montage assigned: don't leave the player stuck unable to move
+	bIsIncapacitated = false;
+}
+
+void ASafeStreetCharacter::OnCrashMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	bIsIncapacitated = false;
+}
+
 void ASafeStreetCharacter::Move(const FInputActionValue& Value)
 {
+	if (bIsIncapacitated)
+	{
+		return;
+	}
+
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller)
