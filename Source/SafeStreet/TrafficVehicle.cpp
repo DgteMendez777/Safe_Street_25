@@ -23,12 +23,24 @@ ATrafficVehicle::ATrafficVehicle()
     VehicleMesh->SetMobility(
         EComponentMobility::Movable
     );
+}
 
-    // The vehicle teleports each tick (no sweep), so overlap is what reliably detects
-    // the player regardless of the imported mesh's own collision setup.
-    VehicleMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    VehicleMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    VehicleMesh->SetGenerateOverlapEvents(true);
+
+// =============================================================
+// CONFIGURACION DESDE TRAFFIC MANAGER
+// =============================================================
+
+void ATrafficVehicle::SetSpawnRoute(
+    ATrafficRoute* NewRoute,
+    float NewStartDistance
+)
+{
+    CurrentRoute = NewRoute;
+
+    StartDistance = NewStartDistance;
+
+    DistanceAlongSpline =
+        NewStartDistance;
 }
 
 
@@ -56,7 +68,6 @@ void ATrafficVehicle::BeginPlay()
     }
 
 
-    // Posicion inicial.
     DistanceAlongSpline =
         StartDistance;
 
@@ -93,11 +104,11 @@ void ATrafficVehicle::BeginPlay()
         LogTemp,
         Warning,
         TEXT(
-            "%s -> Inicio: %.0f cm | "
+            "%s -> Ruta: %s | "
             "Velocidad objetivo: %.2f km/h"
         ),
         *GetName(),
-        StartDistance,
+        *CurrentRoute->GetName(),
         RandomSpeedKmh
     );
 }
@@ -131,7 +142,7 @@ void ATrafficVehicle::Tick(
 
 
     // =========================================================
-    // 1. VELOCIDAD DESEADA
+    // VELOCIDAD DESEADA BASE
     // =========================================================
 
     float DesiredSpeed =
@@ -139,7 +150,7 @@ void ATrafficVehicle::Tick(
 
 
     // =========================================================
-    // 2. VEHICULO DELANTERO
+    // VEHICULO DELANTERO
     // =========================================================
 
     VehicleAhead =
@@ -162,7 +173,7 @@ void ATrafficVehicle::Tick(
             DistanceToVehicle
             <=
             SafeDistance
-            )
+        )
         {
             DesiredSpeed =
                 FMath::Min(
@@ -176,7 +187,7 @@ void ATrafficVehicle::Tick(
             DistanceToVehicle
             <=
             MinimumGap
-            )
+        )
         {
             DesiredSpeed = 0.0f;
         }
@@ -184,7 +195,7 @@ void ATrafficVehicle::Tick(
 
 
     // =========================================================
-    // 3. SEMAFOROS
+    // SEMAFOROS
     // =========================================================
 
     DesiredSpeed =
@@ -194,14 +205,10 @@ void ATrafficVehicle::Tick(
 
 
     // =========================================================
-    // 4. ACELERACION / FRENADO
+    // ACELERACION / FRENADO
     // =========================================================
 
-    if (
-        CurrentSpeed
-        <
-        DesiredSpeed
-        )
+    if (CurrentSpeed < DesiredSpeed)
     {
         CurrentSpeed =
             FMath::FInterpConstantTo(
@@ -211,11 +218,7 @@ void ATrafficVehicle::Tick(
                 Acceleration
             );
     }
-    else if (
-        CurrentSpeed
-        >
-        DesiredSpeed
-        )
+    else if (CurrentSpeed > DesiredSpeed)
     {
         CurrentSpeed =
             FMath::FInterpConstantTo(
@@ -235,7 +238,7 @@ void ATrafficVehicle::Tick(
 
 
     // =========================================================
-    // 5. AVANZAR
+    // MOVIMIENTO
     // =========================================================
 
     DistanceAlongSpline +=
@@ -243,10 +246,6 @@ void ATrafficVehicle::Tick(
         *
         DeltaTime;
 
-
-    // =========================================================
-    // 6. LONGITUD DE RUTA
-    // =========================================================
 
     const float SplineLength =
         Spline->GetSplineLength();
@@ -258,19 +257,21 @@ void ATrafficVehicle::Tick(
     }
 
 
-    // TEMPORAL PARA PRUEBAS.
+    // TEMPORAL.
+    // Luego el Manager eliminara el vehiculo
+    // al finalizar su recorrido.
     if (
         DistanceAlongSpline
         >=
         SplineLength
-        )
+    )
     {
         DistanceAlongSpline = 0.0f;
     }
 
 
     // =========================================================
-    // 7. TRANSFORM
+    // POSICION / ROTACION
     // =========================================================
 
     const FVector NewLocation =
@@ -308,17 +309,12 @@ float ATrafficVehicle::CalculateTrafficLightSpeed(
     }
 
 
-    // =========================================================
-    // BUSCAR PROXIMO SEMAFORO
-    // =========================================================
-
     const FTrafficLightControlPoint* Control =
         CurrentRoute->GetNextTrafficLight(
             DistanceAlongSpline
         );
 
 
-    // Esta ruta no tiene mas semaforos delante.
     if (!Control)
     {
         return CurrentDesiredSpeed;
@@ -331,41 +327,32 @@ float ATrafficVehicle::CalculateTrafficLightSpeed(
     }
 
 
-    // =========================================================
-    // DISTANCIA HASTA LA LINEA
-    // =========================================================
-
     const float DistanceToStopLine =
         Control->StopDistance
         -
         DistanceAlongSpline;
 
 
-    // Todavia estamos demasiado lejos.
     if (
         DistanceToStopLine
         >
         Control->DetectionDistance
-        )
+    )
     {
         return CurrentDesiredSpeed;
     }
 
 
-    // =========================================================
-    // ESTADO
-    // =========================================================
-
     const EVehicleTrafficLightState LightState =
         Control->TrafficLight->GetLightState();
 
 
-    // Verde: continuar normalmente.
+    // Verde -> no hay restriccion.
     if (
         LightState
         ==
         EVehicleTrafficLightState::Green
-        )
+    )
     {
         return CurrentDesiredSpeed;
     }
@@ -384,24 +371,15 @@ float ATrafficVehicle::CalculateTrafficLightSpeed(
         );
 
 
-    // Estamos practicamente en la linea.
     if (
         EffectiveDistance
         <=
         10.0f
-        )
+    )
     {
         return 0.0f;
     }
 
-
-    /*
-        Cinematica:
-
-        v� = 2ad
-
-        v = sqrt(2ad)
-    */
 
     const float MaxStoppingSpeed =
         FMath::Sqrt(
@@ -438,10 +416,10 @@ ATrafficVehicle::FindVehicleAhead() const
 
     for (
         TActorIterator<ATrafficVehicle>
-        It(GetWorld());
+            It(GetWorld());
         It;
         ++It
-        )
+    )
     {
         ATrafficVehicle* OtherVehicle =
             *It;
@@ -451,7 +429,7 @@ ATrafficVehicle::FindVehicleAhead() const
             OtherVehicle
             ==
             this
-            )
+        )
         {
             continue;
         }
@@ -461,7 +439,7 @@ ATrafficVehicle::FindVehicleAhead() const
             OtherVehicle->CurrentRoute
             !=
             CurrentRoute
-            )
+        )
         {
             continue;
         }
@@ -477,7 +455,7 @@ ATrafficVehicle::FindVehicleAhead() const
             DistanceDifference > 0.0f
             &&
             DistanceDifference < ClosestDistance
-            )
+        )
         {
             ClosestDistance =
                 DistanceDifference;

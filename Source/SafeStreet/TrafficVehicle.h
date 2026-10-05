@@ -18,6 +18,28 @@ public:
     ATrafficVehicle();
 
 
+    // =========================================================
+    // INTERFAZ PARA TRAFFIC MANAGER
+    // =========================================================
+
+    void SetSpawnRoute(
+        ATrafficRoute* NewRoute,
+        float NewStartDistance
+    );
+
+
+    ATrafficRoute* GetCurrentRoute() const
+    {
+        return CurrentRoute;
+    }
+
+
+    float GetDistanceAlongSpline() const
+    {
+        return DistanceAlongSpline;
+    }
+
+
 protected:
 
     virtual void BeginPlay() override;
@@ -107,7 +129,7 @@ protected:
 
 
     // =========================================================
-    // VELOCIDAD PROBABILISTICA
+    // PROBABILIDAD
     // =========================================================
 
     UPROPERTY(
