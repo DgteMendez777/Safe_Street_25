@@ -8,11 +8,15 @@
 
 class UWorld;
 class UWidget;
+class USoundBase;
 
 UCLASS()
 class SAFESTREET_API USafeStreetMainMenuWidget : public UUserWidget
 {
 	GENERATED_BODY()
+
+public:
+	USafeStreetMainMenuWidget(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -54,6 +58,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Menu|Prompt Animation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float MaxPromptOpacity = 1.f;
+
+	// Background ambience for the menu, looped. The sound asset needs "Looping" enabled.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Menu", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoundBase> AmbienceSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Menu", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float AmbienceVolume = 0.5f;
 
 private:
 	void StartGame();

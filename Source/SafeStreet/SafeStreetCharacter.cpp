@@ -15,7 +15,12 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+#include "Kismet/GameplayStatics.h"
+#include "SafeStreetGameOverWidget.h"
+#include "SafeStreetPauseWidget.h"
+#include "Sound/SoundBase.h"
 #include "TrafficVehicle.h"
+#include "UObject/ConstructorHelpers.h"
 
 // Sets default values
 ASafeStreetCharacter::ASafeStreetCharacter()
@@ -48,6 +53,24 @@ ASafeStreetCharacter::ASafeStreetCharacter()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ASafeStreetCharacter::OnCapsuleBeginOverlap);
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> DefaultFootstepSoundFinder(
+		TEXT("/Game/WidgetsFedd/Resources/Sound/step.step")
+	);
+
+	if (DefaultFootstepSoundFinder.Succeeded())
+	{
+		FootstepSound = DefaultFootstepSoundFinder.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> DefaultAmbienceSoundFinder(
+		TEXT("/Game/WidgetsFedd/Resources/Sound/ambience.ambience")
+	);
+
+	if (DefaultAmbienceSoundFinder.Succeeded())
+	{
+		AmbienceSound = DefaultAmbienceSoundFinder.Object;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -69,6 +92,11 @@ void ASafeStreetCharacter::BeginPlay()
 			}
 		}
 	}
+
+	if (AmbienceSound)
+	{
+		UGameplayStatics::PlaySound2D(this, AmbienceSound, AmbienceVolume);
+	}
 }
 
 // Called every frame
@@ -76,6 +104,37 @@ void ASafeStreetCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateFootsteps(DeltaTime);
+}
+
+void ASafeStreetCharacter::UpdateFootsteps(float DeltaTime)
+{
+	if (bIsIncapacitated)
+	{
+		FootstepTimer = 0.f;
+		return;
+	}
+
+	const bool bIsMoving = GetVelocity().SizeSquared() > FMath::Square(10.f);
+	if (!bIsMoving)
+	{
+		FootstepTimer = 0.f;
+		return;
+	}
+
+	const float Interval = bIsSprinting ? RunStepInterval : WalkStepInterval;
+
+	FootstepTimer += DeltaTime;
+
+	if (FootstepTimer >= Interval)
+	{
+		FootstepTimer = 0.f;
+
+		if (FootstepSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, FootstepSound, GetActorLocation());
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -91,7 +150,12 @@ void ASafeStreetCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ASafeStreetCharacter::StartSprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASafeStreetCharacter::StopSprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ASafeStreetCharacter::StopSprint);
+
 	}
+
+	// Classic binding (not Enhanced Input): Escape should pause regardless of which
+	// mapping context is active, so it doesn't need an Input Action asset at all.
+	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASafeStreetCharacter::TogglePause);
 }
 
 void ASafeStreetCharacter::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -108,6 +172,8 @@ void ASafeStreetCharacter::OnCapsuleBeginOverlap(UPrimitiveComponent* Overlapped
 
 	bIsIncapacitated = true;
 	OnHitByVehicle();
+
+	GetWorldTimerManager().SetTimer(GameOverTimerHandle, this, &ASafeStreetCharacter::TriggerGameOver, GameOverDelay, false);
 
 	if (CrashMontage)
 	{
@@ -129,6 +195,61 @@ void ASafeStreetCharacter::OnCapsuleBeginOverlap(UPrimitiveComponent* Overlapped
 void ASafeStreetCharacter::OnCrashMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	bIsIncapacitated = false;
+}
+
+void ASafeStreetCharacter::TriggerGameOver()
+{
+	if (!GameOverWidgetClass)
+	{
+		return;
+	}
+
+	if (!GameOverWidget)
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			GameOverWidget = CreateWidget<USafeStreetGameOverWidget>(PlayerController, GameOverWidgetClass);
+			if (GameOverWidget)
+			{
+				GameOverWidget->AddToViewport();
+			}
+		}
+	}
+
+	if (GameOverWidget)
+	{
+		GameOverWidget->ShowGameOver();
+	}
+}
+
+void ASafeStreetCharacter::TogglePause()
+{
+	if (bIsIncapacitated)
+	{
+		return;
+	}
+
+	if (!PauseWidgetClass)
+	{
+		return;
+	}
+
+	if (!PauseWidget)
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PauseWidget = CreateWidget<USafeStreetPauseWidget>(PlayerController, PauseWidgetClass);
+			if (PauseWidget)
+			{
+				PauseWidget->AddToViewport();
+			}
+		}
+	}
+
+	if (PauseWidget)
+	{
+		PauseWidget->TogglePause();
+	}
 }
 
 void ASafeStreetCharacter::Move(const FInputActionValue& Value)
@@ -166,10 +287,12 @@ void ASafeStreetCharacter::Look(const FInputActionValue& Value)
 void ASafeStreetCharacter::StartSprint(const FInputActionValue& Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+	bIsSprinting = true;
 }
 
 void ASafeStreetCharacter::StopSprint(const FInputActionValue& Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	bIsSprinting = false;
 }
 

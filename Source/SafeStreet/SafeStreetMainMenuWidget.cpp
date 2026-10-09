@@ -6,7 +6,22 @@
 #include "Components/Widget.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 #include "TimerManager.h"
+#include "UObject/ConstructorHelpers.h"
+
+USafeStreetMainMenuWidget::USafeStreetMainMenuWidget(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	static ConstructorHelpers::FObjectFinder<USoundBase> DefaultAmbienceSoundFinder(
+		TEXT("/Game/WidgetsFedd/Resources/Sound/ambiencemenu.ambiencemenu")
+	);
+
+	if (DefaultAmbienceSoundFinder.Succeeded())
+	{
+		AmbienceSound = DefaultAmbienceSoundFinder.Object;
+	}
+}
 
 void USafeStreetMainMenuWidget::NativeConstruct()
 {
@@ -14,6 +29,11 @@ void USafeStreetMainMenuWidget::NativeConstruct()
 
 	SetIsFocusable(true);
 	SetRenderOpacity(0.f);
+
+	if (AmbienceSound)
+	{
+		UGameplayStatics::PlaySound2D(this, AmbienceSound, AmbienceVolume);
+	}
 }
 
 void USafeStreetMainMenuWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
