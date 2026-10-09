@@ -1,5 +1,8 @@
 #include "SafeStreetAIClient.h"
 
+// FEEDBACK
+#include "SafeStreetFeedbackWidget.h"
+
 // HTTP
 #include "HttpModule.h"
 
@@ -59,6 +62,34 @@ void ASafeStreetAIClient::BeginPlay()
 	ConfigureAICamera();
 
 	CheckServerHealth();
+
+
+	// --------------------------------------------------------
+	// Crear el widget de retroalimentacion una sola vez.
+	// --------------------------------------------------------
+
+	if (FeedbackWidgetClass)
+	{
+		APlayerController* PlayerController =
+			UGameplayStatics::GetPlayerController(
+				GetWorld(),
+				0
+			);
+
+		if (PlayerController)
+		{
+			FeedbackWidget =
+				CreateWidget<USafeStreetFeedbackWidget>(
+					PlayerController,
+					FeedbackWidgetClass
+				);
+
+			if (FeedbackWidget)
+			{
+				FeedbackWidget->AddToViewport();
+			}
+		}
+	}
 }
 
 
@@ -1090,6 +1121,27 @@ void ASafeStreetAIClient::ParseDetectionResponse(
 		LastDetections.Add(
 			Detection
 		);
+
+
+		// ----------------------------------------------------
+		// RETROALIMENTACION (una sola vez por clase)
+		// ----------------------------------------------------
+
+		if (
+			FeedbackClassNames.Contains(Detection.ClassName)
+			&&
+			!AlreadyShownFeedbackClasses.Contains(Detection.ClassName)
+			)
+		{
+			AlreadyShownFeedbackClasses.Add(Detection.ClassName);
+
+			OnFeedbackDetected.Broadcast(Detection.ClassName);
+
+			if (FeedbackWidget)
+			{
+				FeedbackWidget->ShowFeedbackFor(Detection.ClassName);
+			}
+		}
 
 
 		UE_LOG(

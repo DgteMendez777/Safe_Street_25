@@ -9,6 +9,10 @@
 
 class USceneCaptureComponent2D;
 class UTextureRenderTarget2D;
+class USafeStreetFeedbackWidget;
+
+// Fired the first time a class in FeedbackClassNames is detected this session
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSafeStreetFeedbackDetected, const FString&, ClassName);
 
 
 // ============================================================
@@ -57,6 +61,26 @@ public:
 	ASafeStreetAIClient();
 
 	virtual void Tick(float DeltaTime) override;
+
+
+	// ========================================================
+	// RETROALIMENTACION AL JUGADOR
+	// ========================================================
+
+	// Broadcast una sola vez por clase, la primera vez que se detecta en esta sesion.
+	// Un widget puede engancharse a esto (BindEvent) para mostrar la explicacion.
+	UPROPERTY(BlueprintAssignable, Category = "SafeStreet AI|Feedback")
+	FOnSafeStreetFeedbackDetected OnFeedbackDetected;
+
+	// Nombres exactos de class_name (tal como los devuelve el servidor) que deben
+	// disparar retroalimentacion al jugador. Las demas clases detectadas se ignoran para esto.
+	UPROPERTY(EditAnywhere, Category = "SafeStreet AI|Feedback")
+	TArray<FString> FeedbackClassNames;
+
+	// Widget que se crea solo al iniciar y se muestra automaticamente cuando se detecta
+	// una clase de FeedbackClassNames. No hace falta cablear nada en Blueprint para esto.
+	UPROPERTY(EditAnywhere, Category = "SafeStreet AI|Feedback")
+	TSubclassOf<USafeStreetFeedbackWidget> FeedbackWidgetClass;
 
 
 protected:
@@ -158,4 +182,10 @@ private:
 
 	UPROPERTY()
 	TArray<FSafeStreetDetection> LastDetections;
+
+	// Clases (de FeedbackClassNames) que ya dispararon su retroalimentacion esta sesion
+	TSet<FString> AlreadyShownFeedbackClasses;
+
+	UPROPERTY()
+	TObjectPtr<USafeStreetFeedbackWidget> FeedbackWidget;
 };
