@@ -33,7 +33,24 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Warning Zone")
 	TObjectPtr<USoundBase> AppearSound;
 
+	// Voice warning played right after the barrier appears; leave empty for silent
+	UPROPERTY(EditAnywhere, Category = "Warning Zone")
+	TObjectPtr<USoundBase> VoiceSound;
+
+	// Seconds between the barrier appearing and the voice starting, so they don't overlap
+	UPROPERTY(EditAnywhere, Category = "Warning Zone", meta = (ClampMin = "0.0"))
+	float VoiceDelay = 0.6f;
+
+	// Minimum seconds between two voice warnings, so entering and leaving the zone doesn't spam it
+	UPROPERTY(EditAnywhere, Category = "Warning Zone", meta = (ClampMin = "0.0"))
+	float VoiceCooldown = 6.f;
+
 private:
+	void PlayVoice();
+
+	FTimerHandle VoiceTimerHandle;
+	float LastVoiceTime = -1000.f;
+
 	UFUNCTION()
 	void OnDetectionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
