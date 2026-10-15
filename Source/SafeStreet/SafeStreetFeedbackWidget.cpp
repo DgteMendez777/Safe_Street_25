@@ -104,7 +104,7 @@ void USafeStreetFeedbackWidget::NativeTick(const FGeometry& MyGeometry, float In
 
 FReply USafeStreetFeedbackWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	if (SlideState == ESlideState::Shown)
+	if (SlideState == ESlideState::Shown && InKeyEvent.GetKey() == EKeys::SpaceBar)
 	{
 		HideFeedback();
 		return FReply::Handled();
