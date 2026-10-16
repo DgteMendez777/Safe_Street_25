@@ -3,6 +3,7 @@
 
 #include "SafeStreetIntroWidget.h"
 
+#include "Components/AudioComponent.h"
 #include "Components/Image.h"
 #include "Engine/Texture2D.h"
 #include "GameFramework/PlayerController.h"
@@ -20,6 +21,24 @@ USafeStreetIntroWidget::USafeStreetIntroWidget(const FObjectInitializer& ObjectI
 	if (DefaultShowSoundFinder.Succeeded())
 	{
 		ShowSound = DefaultShowSoundFinder.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> WelcomeSoundFinder(
+		TEXT("/Game/WidgetsFedd/Resources/Sound/BienvenidaSafeStreet.BienvenidaSafeStreet")
+	);
+
+	if (WelcomeSoundFinder.Succeeded())
+	{
+		WelcomeSound = WelcomeSoundFinder.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> ObjectiveSoundFinder(
+		TEXT("/Game/WidgetsFedd/Resources/Sound/SalirColegio.SalirColegio")
+	);
+
+	if (ObjectiveSoundFinder.Succeeded())
+	{
+		ObjectiveSound = ObjectiveSoundFinder.Object;
 	}
 
 	static ConstructorHelpers::FObjectFinder<UTexture2D> LaCalleFinder(
@@ -107,6 +126,14 @@ void USafeStreetIntroWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 
 		if (Alpha >= 1.f)
 		{
+			if (WelcomeSound && PageIndex == WelcomeAfterPage)
+			{
+				if (UAudioComponent* WelcomeAudio = UGameplayStatics::SpawnSound2D(this, WelcomeSound))
+				{
+					WelcomeAudio->OnAudioFinished.AddDynamic(this, &USafeStreetIntroWidget::OnWelcomeFinished);
+				}
+			}
+
 			if (PageIndex + 1 < IntroImages.Num())
 			{
 				ShowPage(PageIndex + 1);
@@ -129,6 +156,14 @@ FReply USafeStreetIntroWidget::NativeOnKeyDown(const FGeometry& InGeometry, cons
 	}
 
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+void USafeStreetIntroWidget::OnWelcomeFinished()
+{
+	if (ObjectiveSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ObjectiveSound);
+	}
 }
 
 void USafeStreetIntroWidget::FinishIntro()

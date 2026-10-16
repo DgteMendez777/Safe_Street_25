@@ -47,9 +47,24 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Intro")
 	TObjectPtr<USoundBase> ShowSound;
 
+	// Welcome voice played right after the player closes the page at WelcomeAfterPage; leave empty for silent
+	UPROPERTY(EditAnywhere, Category = "Intro")
+	TObjectPtr<USoundBase> WelcomeSound;
+
+	// Voice played right after WelcomeSound finishes (the "you just left school, catch the bus" objective)
+	UPROPERTY(EditAnywhere, Category = "Intro")
+	TObjectPtr<USoundBase> ObjectiveSound;
+
+	// Zero-based index of the page after which the welcome voice plays (0 = the first page)
+	UPROPERTY(EditAnywhere, Category = "Intro", meta = (ClampMin = "0"))
+	int32 WelcomeAfterPage = 0;
+
 private:
 	void ShowPage(int32 Index);
 	void FinishIntro();
+
+	UFUNCTION()
+	void OnWelcomeFinished();
 
 	enum class ESlideState : uint8
 	{
