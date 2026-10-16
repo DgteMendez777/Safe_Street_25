@@ -61,6 +61,15 @@ ASafeStreetCurbWarningZone::ASafeStreetCurbWarningZone()
 		AppearSound = AppearSoundFinder.Object;
 	}
 
+	static ConstructorHelpers::FObjectFinder<USoundBase> VoiceSoundFinder(
+		TEXT("/Game/WidgetsFedd/Resources/Sound/Calzada.Calzada")
+	);
+
+	if (VoiceSoundFinder.Succeeded())
+	{
+		VoiceSound = VoiceSoundFinder.Object;
+	}
+
 	DetectionBox->OnComponentBeginOverlap.AddDynamic(this, &ASafeStreetCurbWarningZone::OnDetectionBeginOverlap);
 	DetectionBox->OnComponentEndOverlap.AddDynamic(this, &ASafeStreetCurbWarningZone::OnDetectionEndOverlap);
 }
@@ -75,7 +84,21 @@ void ASafeStreetCurbWarningZone::OnDetectionBeginOverlap(UPrimitiveComponent* Ov
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, AppearSound, BarrierMesh->GetComponentLocation());
 		}
+
+		GetWorldTimerManager().SetTimer(VoiceTimerHandle, this, &ASafeStreetCurbWarningZone::PlayVoice, FMath::Max(VoiceDelay, 0.01f), false);
 	}
+}
+
+void ASafeStreetCurbWarningZone::PlayVoice()
+{
+	const float Now = GetWorld()->GetTimeSeconds();
+	if (!VoiceSound || Now - LastVoiceTime < VoiceCooldown)
+	{
+		return;
+	}
+
+	LastVoiceTime = Now;
+	UGameplayStatics::PlaySoundAtLocation(this, VoiceSound, BarrierMesh->GetComponentLocation());
 }
 
 void ASafeStreetCurbWarningZone::OnDetectionEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -83,5 +106,6 @@ void ASafeStreetCurbWarningZone::OnDetectionEndOverlap(UPrimitiveComponent* Over
 	if (OtherActor && OtherActor->IsA<ASafeStreetCharacter>())
 	{
 		BarrierMesh->SetHiddenInGame(true);
+		GetWorldTimerManager().ClearTimer(VoiceTimerHandle);
 	}
 }
