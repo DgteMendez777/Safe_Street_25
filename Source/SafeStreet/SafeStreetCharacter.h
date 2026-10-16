@@ -14,6 +14,7 @@ class UInputAction;
 class UAnimMontage;
 class USafeStreetPauseWidget;
 class USafeStreetGameOverWidget;
+class USafeStreetIntroWidget;
 class USoundBase;
 
 UCLASS()
@@ -108,6 +109,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<USafeStreetGameOverWidget> GameOverWidgetClass;
 
+	// Intro pages shown automatically when the map starts, before any gameplay
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<USafeStreetIntroWidget> IntroWidgetClass;
+
 	UFUNCTION()
 	void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -132,6 +137,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<USafeStreetGameOverWidget> GameOverWidget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USafeStreetIntroWidget> IntroWidget;
 
 	FTimerHandle GameOverTimerHandle;
 };

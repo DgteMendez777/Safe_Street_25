@@ -17,6 +17,7 @@
 #include "InputMappingContext.h"
 #include "Kismet/GameplayStatics.h"
 #include "SafeStreetGameOverWidget.h"
+#include "SafeStreetIntroWidget.h"
 #include "SafeStreetPauseWidget.h"
 #include "Sound/SoundBase.h"
 #include "TrafficVehicle.h"
@@ -96,6 +97,20 @@ void ASafeStreetCharacter::BeginPlay()
 	if (AmbienceSound)
 	{
 		UGameplayStatics::PlaySound2D(this, AmbienceSound, AmbienceVolume);
+	}
+
+	// Last, so the intro's UI-only input mode wins over the game-only mode set above
+	if (IntroWidgetClass)
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			IntroWidget = CreateWidget<USafeStreetIntroWidget>(PlayerController, IntroWidgetClass);
+			if (IntroWidget)
+			{
+				IntroWidget->AddToViewport();
+				IntroWidget->ShowIntro();
+			}
+		}
 	}
 }
 
